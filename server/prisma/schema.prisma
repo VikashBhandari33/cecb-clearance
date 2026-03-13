@@ -1,0 +1,159 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  PROPONENT
+  SCRUTINY
+  MOM_TEAM
+}
+
+enum AppStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_SCRUTINY
+  EDS
+  REFERRED
+  MOM_GENERATED
+  FINALIZED
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         Role     @default(PROPONENT)
+  organization String?
+  phone        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  applications  Application[]
+  auditEvents   AuditChain[]
+  notifications Notification[]
+}
+
+model Application {
+  id          String    @id @default(uuid())
+  proponentId String
+  proponent   User      @relation(fields: [proponentId], references: [id])
+
+  projectName String
+  sector      String
+  district    String
+  state       String    @default("Chhattisgarh")
+  lat         Float?
+  lng         Float?
+  areaHa      Float?
+  description String?
+
+  status      AppStatus @default(DRAFT)
+  feeAmount   Float?
+  feePaid     Boolean   @default(false)
+
+  gistText    String?
+  momText     String?
+  momLocked   Boolean   @default(false)
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  documents     Document[]
+  payments      Payment[]
+  edsNotices    EdsNotice[]
+  auditEvents   AuditChain[]
+  gisRiskFlags  GisRiskFlag[]
+  notifications Notification[]
+}
+
+model Document {
+  id            String   @id @default(uuid())
+  applicationId String
+  application   Application @relation(fields: [applicationId], references: [id])
+
+  docType       String
+  fileName      String
+  fileUrl       String
+  fileHash      String?
+  ocrText       String?
+  verified      Boolean  @default(false)
+  verifiedBy    String?
+
+  uploadedAt    DateTime @default(now())
+}
+
+model Payment {
+  id            String   @id @default(uuid())
+  applicationId String   @unique
+  application   Application @relation(fields: [applicationId], references: [id])
+
+  amount        Float
+  utrNumber     String?
+  qrCodeUrl     String?
+  verified      Boolean  @default(false)
+  verifiedBy    String?
+  verifiedAt    DateTime?
+
+  createdAt     DateTime @default(now())
+}
+
+model EdsNotice {
+  id            String   @id @default(uuid())
+  applicationId String
+  application   Application @relation(fields: [applicationId], references: [id])
+
+  deficiencies  String
+  issuedBy      String
+  issuedAt      DateTime @default(now())
+  resolvedAt    DateTime?
+}
+
+model AuditChain {
+  id            Int      @id @default(autoincrement())
+  eventType     String
+  actorId       String
+  actor         User     @relation(fields: [actorId], references: [id])
+  applicationId String?
+  application   Application? @relation(fields: [applicationId], references: [id])
+
+  payload       Json
+  payloadHash   String
+  prevHash      String
+  chainHash     String
+
+  createdAt     DateTime @default(now())
+}
+
+model GisRiskFlag {
+  id            String   @id @default(uuid())
+  applicationId String
+  application   Application @relation(fields: [applicationId], references: [id])
+
+  flagType      String
+  distanceM     Float
+  layerName     String
+  severity      String   @default("MEDIUM")
+
+  createdAt     DateTime @default(now())
+}
+
+model Notification {
+  id            String   @id @default(uuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id])
+  applicationId String?
+  application   Application? @relation(fields: [applicationId], references: [id])
+
+  type          String
+  message       String
+  read          Boolean  @default(false)
+
+  createdAt     DateTime @default(now())
+}
