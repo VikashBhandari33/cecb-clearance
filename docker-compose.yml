@@ -19,5 +19,38 @@ services:
     ports:
       - "6379:6379"
 
+  server:
+    build: ./server
+    container_name: cecb_server
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - DATABASE_URL=postgresql://cecb:cecb123@postgres:5432/cecb_db
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=super-secret-jwt-key-change-in-production-32chars
+      - JWT_REFRESH_SECRET=super-secret-refresh-key-change-in-production
+      - JWT_EXPIRES_IN=15m
+      - REFRESH_EXPIRES_IN=7d
+      - NODE_ENV=development
+      - CLIENT_URL=http://localhost:5173
+      - GEMINI_API_KEY=AIzaSyDiVhB1DitSwBOmVDOl9aGkhusqNboBCi0
+    depends_on:
+      - postgres
+      - redis
+
+  client:
+    build: ./client
+    container_name: cecb_client
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=http://localhost:3000
+    depends_on:
+      - server
+
 volumes:
   postgres_data:
+

@@ -6,6 +6,7 @@ import { asyncHandler } from "../utils/asyncHandler";
 import { AppError } from "../middleware/errorHandler";
 import { writeAuditEvent } from "../utils/audit";
 import { assertTransition } from "../services/statusMachine";
+import {
   CreateApplicationInput,
   UpdateApplicationInput,
 } from "../routes/applications/application.schema";
